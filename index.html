@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Drag and Drop</title>
+
+	<link rel="stylesheet" href="main.css" />
+
+	<style>
+		* { box-sizing: border-box; }
+
+		.container {
+			border: 0px solid black;
+			list-style: none;
+			padding: 2px;
+			font-size: 1.5rem;
+
+		}
+
+		.container.source {
+			display: flex;
+			gap: 1px;
+		}
+
+		.container.trash {
+			width: 50px;
+		}
+
+		.container.target {
+			display: grid;
+			grid-template-columns: repeat(4, 50px);
+			gap: 1px;
+		}
+
+		.container li {
+			border: 1px solid #999;
+			background: #ddd;
+			height: 50px;
+		}
+
+		.container.source li {
+			width: 50px;
+		}
+
+		.container .draggable {
+			border: 1px solid black;
+			background: coral;
+			padding: 0.1em 0.4em;
+			height: 100%;
+			cursor: grab;
+			user-select: none;
+		}
+
+		.container.target .draggable {
+			background: lightpink;
+		}
+
+		.container.target.solved .draggable {
+			background: #ff005f;
+		}
+	</style>
+</head>
+<body>
+	<h1>Add, Drag, Drop, Trash</h1>
+
+
+
+	<ul class="source container">
+		<li class="dropzone"><div class="draggable">A</div></li>
+		<li class="dropzone"><div class="draggable">B</div></li>
+		<li class="dropzone"><div class="draggable">C</div></li>
+		<li class="dropzone"><div class="draggable">D</div></li>
+		<li class="dropzone"><div class="draggable">E</div></li>
+		<li class="dropzone"><div class="draggable">F</div></li>
+		<li class="dropzone"><div class="draggable">G</div></li>
+		<li class="dropzone"><div class="draggable">H</div></li>
+	</ul>
+
+	<ul class="target container">
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+		<li class="dropzone"></li>
+	</ul>
+
+	<ul class="trash container">
+		<li class="dropzone"></li>
+	</ul>
+
+	<button id="add-item">Add</button>
+
+	<script type="module">
+		import shopify from 'https://cdn.jsdelivr.net/npm/@shopify/draggable@1.0.0-beta.8/+esm';
+
+		const levels = [
+			[null, null, 'A', null, null, 'B', null, null]
+		];
+
+		const calculate = function () {
+
+			const solution = levels[0];
+
+			const slots = document.querySelectorAll('.container.target > *');
+			let incorrect = 0;
+
+			for (let i = 0; i < slots.length; i++) {
+
+				if (solution[i] == null && slots[i].childNodes.length == 0) {
+					// console.log('slot', i+1, 'correct empty');
+					continue;
+				}
+
+				if (slots[i].childNodes[0] && slots[i].childNodes[0].textContent == solution[i]) {
+					// console.log('slot', i+1, 'correct full', slots[i].childNodes[0].textContent);
+					continue;
+				}
+
+				// console.log('slot', i+1, 'incorrect');
+				incorrect += 1;
+			}
+
+			if (incorrect == 0) {
+				document.querySelector('.container.target').classList.add('solved');
+			} else {
+				document.querySelector('.container.target').classList.remove('solved');
+			}
+		}
+
+		const containers = document.querySelectorAll('.container');
+
+		if (containers.length !== 0) {
+
+			const droppable = new shopify.Droppable(containers, {
+				'draggable': '.draggable',
+				'dropzone': '.dropzone',
+				'mirror': {
+					'constrainDimensions': true,
+				},
+				'classes': {
+					'droppable:occupied': ['occupied'],
+				}
+			});
+
+			let droppableOrigin;
+
+			droppable.on('drag:start', (evt) => {
+				droppableOrigin = evt.originalSource.parentNode;
+			});
+
+			droppable.on('droppable:dropped', (evt) => {
+				const isTrash = evt.dropzone.parentNode.classList.contains('trash');
+				const item = evt.data.dragEvent.data.originalSource;
+
+				if (isTrash) {
+					// why is this necessary
+					setTimeout(function (ele) {
+						ele.parentNode.classList.remove('occupied');
+						ele.remove();
+					}, 500, item);
+					
+					return;
+				}
+
+				setTimeout(calculate, 600);
+				/*
+				if (droppableOrigin !== evt.dropzone.dataset.dropzone) {
+					evt.cancel();
+				}
+				*/
+			});
+
+			document.querySelector('#add-item').addEventListener('click', function (event) {
+				const src = document.querySelector('.container.source');
+
+				const ele = document.createElement('div');
+				ele.classList.add('draggable');
+				ele.textContent = 'X';
+
+				const dropzone = src.querySelector('.dropzone:empty');
+				if (dropzone) {
+					dropzone.append(ele);
+				} else {
+					console.warn('no free dropzone!');
+				}
+			});
+
+		}
+	</script>
+</body>
+</html>
